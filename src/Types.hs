@@ -11,6 +11,7 @@ module Types ( resolution_w
              , direction
              , elapsedTime
              , lastMove
+             , gameOver
              ) where
 import Prelude hiding ( Either(Left, Right)
                       )
@@ -34,6 +35,7 @@ declareLenses [d|
                                  , direction     :: Direction
                                  , elapsedTime   :: Float
                                  , lastMove      :: Float
+                                 , gameOver      :: Bool
                                  }
     |]
 
@@ -42,7 +44,7 @@ resolution_w = 800
 resolution_h = 600
 
 initialWorldState :: WorldState
-initialWorldState = WorldState snake [] Up 0 0
+initialWorldState = WorldState snake [] Up 0 0 False
   where
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)

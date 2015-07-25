@@ -40,7 +40,7 @@ makeMove = do
       Right -> (x+1, y)
 
 inputHandler :: Event -> WorldState -> WorldState
-inputHandler ev state = execState (inputHandler' ev) state
+inputHandler ev = execState (inputHandler' ev)
 
 inputHandler' :: Event -> State WorldState ()
 inputHandler' (EventKey (SpecialKey KeyLeft) KeyState.Down _ _)  = use direction >>= \dir -> unless (dir == Right) $ direction .= Left 

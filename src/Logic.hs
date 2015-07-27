@@ -58,15 +58,24 @@ inputHandler :: Event -> WorldState -> WorldState
 inputHandler ev = execState (inputHandler' ev)
 
 inputHandler' :: Event -> State WorldState ()
-inputHandler' (EventKey (SpecialKey key) keystate _ _) = case key of
-  KeyLeft  -> when (keystate == KeyState.Down) $ Left  `opp` Right
-  KeyRight -> when (keystate == KeyState.Down) $ Right `opp` Left
-  KeyUp    -> when (keystate == KeyState.Down) $ Up    `opp` Down
-  KeyDown  -> when (keystate == KeyState.Down) $ Down  `opp` Up
-  KeySpace -> if keystate == KeyState.Down
-              then speed %= (/2)
-              else speed %= (*2)
-  _        -> return ()
+inputHandler' (EventKey (SpecialKey key) keystate _ _) = do
+  state <- use gameState
+  case state of
+    Playing -> case key of
+        KeyLeft  -> when (keystate == KeyState.Down) $ Left  `opp` Right
+        KeyRight -> when (keystate == KeyState.Down) $ Right `opp` Left
+        KeyUp    -> when (keystate == KeyState.Down) $ Up    `opp` Down
+        KeyDown  -> when (keystate == KeyState.Down) $ Down  `opp` Up
+        KeySpace -> if keystate == KeyState.Down
+                    then speed %= (/2)
+                    else speed %= (*2)
+        _        -> return ()
+    MainMenu -> when (key == KeyEnter && keystate == KeyState.Down) $ gameState .= Playing
+    GameOver -> when (key == KeyEnter && keystate == KeyState.Down) $ do
+      rand <- use rng
+      put pureInitialWorldState
+      rng .= rand
+      randomFoodPellet
   where
     opp :: Direction -> Direction -> State WorldState ()
     opp a b = munless (use lastDirection <&> (==b)) $ direction .= a

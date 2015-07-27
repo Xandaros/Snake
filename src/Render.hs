@@ -10,8 +10,8 @@ import Types
 render :: WorldState -> Picture
 render state = case state^.gameState of
   GameOver -> gameOverScreen state
-  Playing   -> color white $ box <> renderEntities state <> renderScore state
-  _ -> blank
+  Playing  -> color white $ box <> renderEntities state <> renderScore state
+  MainMenu -> color white . scale 0.5 0.5 . translate (-resolution_w+125) (-25) $ text "Press Enter to start"
 
 renderEntities :: WorldState -> Picture
 renderEntities state = renderSnake state <> renderFoodPellet state

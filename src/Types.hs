@@ -2,6 +2,7 @@
 module Types ( resolution_w
              , resolution_h
              , initialWorldState
+             , pureInitialWorldState
              , WorldState(..)
              , Entity(..)
              , Direction(..)
@@ -76,7 +77,12 @@ randomFoodPellet = do
 initialWorldState :: IO WorldState
 initialWorldState = execState randomFoodPellet <$> incompleteState
   where
-    incompleteState = WorldState snake undefined Up Up 0 0 Playing 0 0.1 <$> getStdGen
+    incompleteState :: IO WorldState
+    incompleteState = getStdGen >>= \stdGen -> return $ set rng stdGen pureInitialWorldState
+
+pureInitialWorldState :: WorldState
+pureInitialWorldState = WorldState snake undefined Up Up 0 0 MainMenu 0 0.1 undefined
+  where
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)

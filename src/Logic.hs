@@ -32,6 +32,7 @@ update' dt = munless (use gameOver) $ do
     -- check for food pickup
     mwhen onFood $ do
         snakeSegments %= \segments -> segments ++ [last segments]
+        score += 1
         randomFoodPellet
   -- check for game over
   collision <- checkCollision

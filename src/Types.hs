@@ -13,6 +13,8 @@ module Types ( resolution_w
              , elapsedTime
              , lastMove
              , gameOver
+             , score
+             , rng
              , randomFoodPellet
              ) where
 import Prelude hiding ( Either(Left, Right)
@@ -41,6 +43,7 @@ declareLenses [d|
                                  , elapsedTime   :: Float
                                  , lastMove      :: Float
                                  , gameOver      :: Bool
+                                 , score         :: Int
                                  , rng           :: StdGen
                                  }
     |]
@@ -67,7 +70,7 @@ randomFoodPellet = do
 initialWorldState :: IO WorldState
 initialWorldState = execState randomFoodPellet <$> incompleteState
   where
-    incompleteState = WorldState snake undefined Up Up 0 0 False <$> getStdGen
+    incompleteState = WorldState snake undefined Up Up 0 0 False 0 <$> getStdGen
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)

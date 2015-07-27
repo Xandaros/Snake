@@ -2,8 +2,10 @@ module Render ( render
               ) where
 import Control.Lens
 import Data.Monoid
+import System.IO.Unsafe (unsafePerformIO)
 
 import Graphics.Gloss
+import qualified Graphics.UI.GLUT as GLUT
 
 import Types
 
@@ -11,7 +13,11 @@ render :: WorldState -> Picture
 render state = case state^.gameState of
   GameOver -> gameOverScreen state
   Playing  -> color white $ box <> renderEntities state <> renderScore state
-  MainMenu -> color white . scale 0.5 0.5 . translate (-resolution_w+125) (-25) $ text "Press Enter to start"
+  MainMenu -> color white . scale 0.5 0.5 . translate (-textWidth/2) (-fontHeight/4) $ text startText
+  where
+    renderPlaying = color white $ box <> renderEntities state <> renderScore state
+    startText = "Press Enter to start"
+    textWidth = getTextWidth startText
 
 renderEntities :: WorldState -> Picture
 renderEntities state = renderSnake state <> renderFoodPellet state
@@ -41,7 +47,18 @@ box = line [ ((-w)+10,(-h)+10)
     h = resolution_h/2
 
 gameOverScreen :: WorldState -> Picture
-gameOverScreen state = gameOverText <> scoreText
+gameOverScreen state = translate 0 (fontHeight/4-15) $ gameOverText <> scoreText
   where
-    gameOverText = scale 0.5 0.5 . translate (-resolution_w/2) 0 . color red $ text "Game Over"
-    scoreText = scale 0.3 0.3 . translate 0 (-200) . color red $ text (show (state ^. score))
+    gameOverText = scale 0.5 0.5 . translate (-textWidth/2) (-fontHeight/4) . color red $ text endText
+    scoreText = scale 0.5 0.5 . translate (-getTextWidth scoreT/2) (-(fontHeight + 30)) . color red $ text scoreT
+      where
+        scoreT = show (state^.score)
+    endText = "Game Over"
+    textWidth = getTextWidth endText
+
+--- Utility functions
+getTextWidth :: Num a => String -> a
+getTextWidth = fromIntegral . unsafePerformIO . GLUT.stringWidth GLUT.Roman
+
+fontHeight :: Fractional a => a
+fontHeight = realToFrac . unsafePerformIO $ GLUT.fontHeight GLUT.Roman

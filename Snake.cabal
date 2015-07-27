@@ -27,5 +27,6 @@ executable Snake
                      , lens
                      , mtl
                      , random
+                     , GLUT
   hs-source-dirs:      src
   default-language:    Haskell2010

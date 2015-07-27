@@ -81,6 +81,12 @@ inputHandler' (EventKey (SpecialKey key) keystate _ _) = do
   where
     opp :: Direction -> Direction -> State WorldState ()
     opp a b = munless (use lastDirection <&> (==b)) $ direction .= a
+inputHandler' (EventKey (Char 'p') KeyState.Down _ _) = do
+  state <- use gameState
+  case state of
+    Playing -> gameState .= Paused
+    Paused  -> gameState .= Playing
+    _       -> return ()
 inputHandler' _ = return ()
 
 checkCollision :: State WorldState Bool

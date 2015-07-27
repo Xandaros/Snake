@@ -12,12 +12,24 @@ import Types
 render :: WorldState -> Picture
 render state = case state^.gameState of
   GameOver -> gameOverScreen state
-  Playing  -> color white $ box <> renderEntities state <> renderScore state
+  Playing  -> renderPlaying
+  Paused   -> renderPlaying <> color (withAlpha 0.9 black) fillScreen
   MainMenu -> color white . scale 0.5 0.5 . translate (-textWidth/2) (-fontHeight/4) $ text startText
   where
     renderPlaying = color white $ box <> renderEntities state <> renderScore state
     startText = "Press Enter to start"
     textWidth = getTextWidth startText
+
+fillScreen :: Picture
+fillScreen = polygon [ (-w, -h)
+                   , (-w, h)
+                   , (w, h)
+                   , (w, -h)
+                   , (-w, -h)
+                   ]
+  where
+    w = resolution_w/2
+    h = resolution_h/2
 
 renderEntities :: WorldState -> Picture
 renderEntities state = renderSnake state <> renderFoodPellet state

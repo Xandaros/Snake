@@ -40,7 +40,7 @@ declareLenses [d|
     data Entity = Entity { position :: Point
                          }
 
-    data GameState = MainMenu | Playing | GameOver
+    data GameState = MainMenu | Playing | GameOver | Paused
         deriving (Eq)
 
     data WorldState = WorldState { snakeSegments :: ![Entity]

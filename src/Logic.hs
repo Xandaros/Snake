@@ -26,7 +26,9 @@ update' dt = mwhen (use gameState <&> (==Playing)) $ do
   -- check if enough time has passed to move the snake
   lm <- use lastMove
   spd <- use speed
-  when ((elapsed-lm) > spd) $ do
+  spaceP <- use spacePressed
+  let spd' = if spaceP then spd/2 else spd
+  when ((elapsed-lm) > spd') $ do
     lastMove .= elapsed
     lastDirection <~ use direction
     makeMove
@@ -67,8 +69,8 @@ inputHandler' (EventKey (SpecialKey key) keystate _ _) = do
         KeyUp    -> when (keystate == KeyState.Down) $ Up    `opp` Down
         KeyDown  -> when (keystate == KeyState.Down) $ Down  `opp` Up
         KeySpace -> if keystate == KeyState.Down
-                    then speed %= (/2)
-                    else speed %= (*2)
+                    then spacePressed .= True
+                    else spacePressed .= False
         _        -> return ()
     MainMenu -> when (key == KeyEnter && keystate == KeyState.Down) $ gameState .= Playing
     GameOver -> when (key == KeyEnter && keystate == KeyState.Down) $ do

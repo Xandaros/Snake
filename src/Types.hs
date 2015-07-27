@@ -14,6 +14,7 @@ module Types ( resolution_w
              , lastMove
              , gameOver
              , score
+             , speed
              , rng
              , randomFoodPellet
              ) where
@@ -44,6 +45,7 @@ declareLenses [d|
                                  , lastMove      :: Float
                                  , gameOver      :: Bool
                                  , score         :: Int
+                                 , speed         :: Float
                                  , rng           :: StdGen
                                  }
     |]
@@ -70,7 +72,7 @@ randomFoodPellet = do
 initialWorldState :: IO WorldState
 initialWorldState = execState randomFoodPellet <$> incompleteState
   where
-    incompleteState = WorldState snake undefined Up Up 0 0 False 0 <$> getStdGen
+    incompleteState = WorldState snake undefined Up Up 0 0 False 0 0.1 <$> getStdGen
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)

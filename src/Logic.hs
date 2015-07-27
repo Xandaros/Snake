@@ -25,7 +25,8 @@ update' dt = munless (use gameOver) $ do
   elapsed <- use elapsedTime
   -- check if enough time has passed to move the snake
   lm <- use lastMove
-  when ((elapsed-lm) > 0.2) $ do
+  spd <- use speed
+  when ((elapsed-lm) > spd) $ do
     lastMove .= elapsed
     lastDirection <~ use direction
     makeMove
@@ -57,20 +58,18 @@ inputHandler :: Event -> WorldState -> WorldState
 inputHandler ev = execState (inputHandler' ev)
 
 inputHandler' :: Event -> State WorldState ()
-inputHandler' (EventKey (SpecialKey key) KeyState.Down _ _ ) = case key of
-  KeyLeft  -> Left `opp` Right
-  KeyRight -> Right `opp` Left
-  KeyUp    -> Up `opp` Down
-  KeyDown  -> Down `opp` Up
+inputHandler' (EventKey (SpecialKey key) keystate _ _) = case key of
+  KeyLeft  -> when (keystate == KeyState.Down) $ Left  `opp` Right
+  KeyRight -> when (keystate == KeyState.Down) $ Right `opp` Left
+  KeyUp    -> when (keystate == KeyState.Down) $ Up    `opp` Down
+  KeyDown  -> when (keystate == KeyState.Down) $ Down  `opp` Up
+  KeySpace -> if keystate == KeyState.Down
+              then speed %= (/2)
+              else speed %= (*2)
   _        -> return ()
   where
     opp :: Direction -> Direction -> State WorldState ()
     opp a b = munless (use lastDirection <&> (==b)) $ direction .= a
-
-  --KeyLeft  -> use direction >>= \dir -> unless (dir == Right) $ direction .= Left
-  --KeyRight -> use direction >>= \dir -> unless (dir == Left)  $ direction .= Right
-  --KeyUp    -> use direction >>= \dir -> unless (dir == Down)  $ direction .= Up
-  --KeyDown  -> use direction >>= \dir -> unless (dir == Up)    $ direction .= Down
 inputHandler' _ = return ()
 
 checkCollision :: State WorldState Bool

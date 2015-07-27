@@ -13,13 +13,17 @@ render state = if state^.gameOver
                  else color white $ box <> renderEntities state
 
 renderEntities :: WorldState -> Picture
-renderEntities state = renderSnake state
+renderEntities state = renderSnake state <> renderFoodPellet state
 
 renderSnake :: WorldState -> Picture
 renderSnake state = foldMap renderSegment (state^.snakeSegments)
   where
     renderSegment :: Entity -> Picture
     renderSegment ent@(Entity (x,y)) = translate (x*20) (y*20) . color white $ circleSolid 10
+
+renderFoodPellet :: WorldState -> Picture
+renderFoodPellet state = let Entity (x,y) = state^.foodPellet
+                         in translate (x*20) (y*20) . color white $ circleSolid 7
 
 box :: Picture
 box = line [ ((-w)+10,(-h)+10)

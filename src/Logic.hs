@@ -6,6 +6,7 @@ import Prelude hiding ( Either(Left, Right)
 
 import Control.Lens
 import Control.Monad.State
+import Data.Maybe (fromJust)
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down
@@ -19,17 +20,23 @@ update dt = execState (update' dt)
 
 update' :: Float -> State WorldState ()
 update' dt = munless (use gameOver) $ do
+  -- update time
   elapsedTime += dt
   elapsed <- use elapsedTime
+  -- check if enough time has passed to move the snake
   lm <- use lastMove
-  when ((elapsed-lm) > 0.3) $ do
+  when ((elapsed-lm) > 0.2) $ do
     lastMove .= elapsed
     makeMove
+    -- check for food pickup
+    mwhen onFood $ do
+        snakeSegments %= \segments -> segments ++ [last segments]
+        randomFoodPellet
+  -- check for game over
   collision <- checkCollision
   oob <- checkOOB
   when (collision || oob) $
     gameOver .= True
-  return ()
 
 makeMove :: State WorldState ()
 makeMove = do
@@ -69,8 +76,6 @@ checkCollision = do
   segments <- use snakeSegments
   let positions = map (view position) segments
   return $ count positions (==head positions) > 1
-
-checkOOB :: State WorldState Bool
 checkOOB = do
   Entity (x,y) <- snakeSegments `uses` head
   if x < (-w) || x > w || y < (-h) || y > h
@@ -79,6 +84,12 @@ checkOOB = do
   where
     w = resolution_w/40 - 1
     h = resolution_h/40 - 1
+
+onFood :: State WorldState Bool
+onFood = do
+  snakeHead <- use $ snakeSegments . singular _head . position
+  pellet <- use $ foodPellet . position
+  return (snakeHead == pellet)
 
 count :: [a] -> (a -> Bool) -> Int
 count [] _ = 0

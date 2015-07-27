@@ -8,9 +8,10 @@ import Graphics.Gloss
 import Types
 
 render :: WorldState -> Picture
-render state = if state^.gameOver
-                 then gameOverScreen state
-                 else color white $ box <> renderEntities state <> renderScore state
+render state = case state^.gameState of
+  GameOver -> gameOverScreen state
+  Playing   -> color white $ box <> renderEntities state <> renderScore state
+  _ -> blank
 
 renderEntities :: WorldState -> Picture
 renderEntities state = renderSnake state <> renderFoodPellet state

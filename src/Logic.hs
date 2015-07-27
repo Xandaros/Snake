@@ -19,7 +19,7 @@ update :: Float -> WorldState -> WorldState
 update dt = execState (update' dt)
 
 update' :: Float -> State WorldState ()
-update' dt = munless (use gameOver) $ do
+update' dt = mwhen (use gameState <&> (==Playing)) $ do
   -- update time
   elapsedTime += dt
   elapsed <- use elapsedTime
@@ -39,7 +39,7 @@ update' dt = munless (use gameOver) $ do
   collision <- checkCollision
   oob <- checkOOB
   when (collision || oob) $
-    gameOver .= True
+    gameState .= GameOver
 
 makeMove :: State WorldState ()
 makeMove = do

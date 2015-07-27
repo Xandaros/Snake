@@ -9,6 +9,7 @@ module Types ( resolution_w
              , snakeSegments
              , foodPellet
              , direction
+             , lastDirection
              , elapsedTime
              , lastMove
              , gameOver
@@ -36,6 +37,7 @@ declareLenses [d|
     data WorldState = WorldState { snakeSegments :: ![Entity]
                                  , foodPellet    :: Entity
                                  , direction     :: Direction
+                                 , lastDirection :: Direction
                                  , elapsedTime   :: Float
                                  , lastMove      :: Float
                                  , gameOver      :: Bool
@@ -65,7 +67,7 @@ randomFoodPellet = do
 initialWorldState :: IO WorldState
 initialWorldState = execState randomFoodPellet <$> incompleteState
   where
-    incompleteState = WorldState snake undefined Up 0 0 False <$> getStdGen
+    incompleteState = WorldState snake undefined Up Up 0 0 False <$> getStdGen
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)

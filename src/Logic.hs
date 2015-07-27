@@ -27,6 +27,7 @@ update' dt = munless (use gameOver) $ do
   lm <- use lastMove
   when ((elapsed-lm) > 0.2) $ do
     lastMove .= elapsed
+    lastDirection <~ use direction
     makeMove
     -- check for food pickup
     mwhen onFood $ do
@@ -63,7 +64,7 @@ inputHandler' (EventKey (SpecialKey key) KeyState.Down _ _ ) = case key of
   _        -> return ()
   where
     opp :: Direction -> Direction -> State WorldState ()
-    opp a b = munless (use direction <&> (==b)) $ direction .= a
+    opp a b = munless (use lastDirection <&> (==b)) $ direction .= a
 
   --KeyLeft  -> use direction >>= \dir -> unless (dir == Right) $ direction .= Left
   --KeyRight -> use direction >>= \dir -> unless (dir == Left)  $ direction .= Right

@@ -73,6 +73,7 @@ inputHandler' (EventKey (SpecialKey key) keystate _ _) = do
                     else spacePressed .= False
         _        -> return ()
     MainMenu -> when (key == KeyEnter && keystate == KeyState.Down) $ gameState .= Playing
+    Paused   -> return ()
     GameOver -> when (key == KeyEnter && keystate == KeyState.Down) $ do
       rand <- use rng
       put pureInitialWorldState

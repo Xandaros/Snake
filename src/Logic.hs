@@ -50,9 +50,13 @@ moveEvents time =
                          then steps + 1
                          else steps) 0 time
 
-segments :: Behavior Direction -> EvStream Time -> Behavior (Behavior Snake)
-segments direction time = foldBs (pure snake) (makeMove direction) time
+segments :: Behavior Direction -> EvStream () -> Behavior (Behavior Snake)
+segments direction steps = do
+  let dirs = snapshots direction steps
+  foldBs (pure snake) foldFunc dirs
   where
+    foldFunc :: Behavior Snake -> Direction -> Behavior Snake
+    foldFunc snake dir = makeMove <$> snake <*> pure dir
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)
@@ -60,12 +64,11 @@ segments direction time = foldBs (pure snake) (makeMove direction) time
                                  , (2 ,0)
                                  ]
 
-makeMove :: Behavior Direction -> Behavior Snake -> a -> Behavior Snake
-makeMove direction current _ = do
-  dir <- sample direction
-  (Entity firstSegment) <- head <$> current
-  let newSegment = newPos firstSegment dir
-  (Entity newSegment:) . init <$> current
+makeMove :: Snake -> Direction -> Snake
+makeMove current dir =
+  let (Entity firstSegment) = head current
+      newSegment = newPos firstSegment dir
+  in  (Entity newSegment:) . init $ current
   where
     newPos (x,y) dir = case dir of
       Up    -> (x  ,y+1)

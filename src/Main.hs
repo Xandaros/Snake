@@ -18,7 +18,7 @@ main = runNowGloss (InWindow "Snake" (resolution_w, resolution_h) (0, 0)) black 
 
 mainFRP :: Behavior Float -> EvStream GEvent -> Now (Behavior Picture)
 mainFRP time events = do
-  moveEvs <- sampleNow (moveEvents time)
+  moveEvs <- sampleNow $ (const () <$>) <$> moveEvents time
   dir <- sampleNow $ getDirection events
   snake <- sampleNow (segments dir moveEvs)
   return $ render snake

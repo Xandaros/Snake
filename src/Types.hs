@@ -1,25 +1,26 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Types ( resolution_w
              , resolution_h
-             , initialWorldState
-             , pureInitialWorldState
-             , WorldState(..)
+--             , initialWorldState
+--             , pureInitialWorldState
+--             , WorldState(..)
              , Entity(..)
+             , Snake
              , Direction(..)
              , GameState(..)
-             , position
-             , snakeSegments
-             , foodPellet
-             , direction
-             , lastDirection
-             , elapsedTime
-             , lastMove
-             , gameState
-             , score
-             , speed
-             , spacePressed
-             , rng
-             , randomFoodPellet
+--             , position
+--             , snakeSegments
+--             , foodPellet
+--             , direction
+--             , lastDirection
+--             , elapsedTime
+--             , lastMove
+--             , gameState
+--             , score
+--             , speed
+--             , spacePressed
+--             , rng
+--             , randomFoodPellet
              ) where
 import Prelude hiding ( Either(Left, Right)
                       )
@@ -34,7 +35,7 @@ data Direction = Up
                | Down
                | Left
                | Right
-               deriving (Eq)
+               deriving (Eq, Show)
 
 declareLenses [d|
     data Entity = Entity { position :: Point
@@ -56,6 +57,8 @@ declareLenses [d|
                                  , rng           :: StdGen
                                  }
     |]
+
+type Snake = [Entity]
 
 instance Eq Entity where
   (Entity a) == (Entity b) = a == b

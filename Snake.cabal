@@ -28,5 +28,7 @@ executable Snake
                      , mtl
                      , random
                      , GLUT
+                     , frpnow
+                     , frpnow-gloss
   hs-source-dirs:      src
   default-language:    Haskell2010

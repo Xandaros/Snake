@@ -22,8 +22,9 @@ main = runNowGloss (InWindow "Snake" (resolution_w, resolution_h) (0, 0)) black 
 
 mainFRP :: Behavior Float -> EvStream GEvent -> Now (Behavior Picture)
 mainFRP time events = mdo
-  moveEvs <- sampleNow $ (const () <$>) <$> moveEvents time
-  dir <- sampleNow $ getDirection events
+  moveEvs <- sampleNow $ void <$> moveEvents time
+  lastDir <- sampleNow . unloopify time $ lastDirection moveEvs dir
+  dir <- sampleNow $ getDirection lastDir events
   snake <- sampleNow . unloopify time $ segments dir moveEvs foodEvs
   rng <- sync getStdGen
   pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng

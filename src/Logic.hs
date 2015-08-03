@@ -47,8 +47,8 @@ speed = pure 1
 moveEvents :: Behavior Time -> Behavior (EvStream Time)
 moveEvents time =
   toChanges <$> foldB (\steps contin ->
-                         if contin >= steps + 1
-                         then steps + 1
+                         if contin >= steps + 0.3
+                         then steps + 0.3
                          else steps) 0 time
 
 segments :: Behavior Direction -> EvStream () -> EvStream () -> Behavior (Behavior Snake)
@@ -80,10 +80,17 @@ makeMove current dir =
       Left  -> (x-1,y  )
       Right -> (x+1,y  )
 
-getDirection :: EvStream GEvent -> Behavior (Behavior Direction)
-getDirection evs =
+initialDirection :: Direction
+initialDirection = Up
+
+lastDirection :: EvStream () -> Behavior Direction -> Behavior (Behavior Direction)
+lastDirection evs dir = fromChanges initialDirection $ snapshots dir evs
+
+getDirection :: Behavior Direction -> EvStream GEvent -> Behavior (Behavior Direction)
+getDirection lastDir evs =
   let keyStream = filterMapEs (eventToKey >=> keyToDirection) evs
-  in fromChanges Up keyStream
+      filteredKeyStream = filterMapEsB (filterLastDir lastDir) keyStream
+  in  fromChanges initialDirection filteredKeyStream
   where
     eventToKey :: GEvent -> Maybe Key
     eventToKey (EventKey key _ _ _) = Just key
@@ -97,6 +104,17 @@ getDirection evs =
       KeyDown  -> Just Down
       _        -> Nothing
     keyToDirection _ = Nothing
+
+    filterLastDir :: Behavior Direction -> Behavior (Direction -> Maybe Direction)
+    filterLastDir lastDir = do
+      lastDir' <- lastDir
+      return (\dir -> if lastDir' == opposite dir then Nothing else Just dir)
+
+    opposite :: Direction -> Direction
+    opposite Left = Right
+    opposite Right = Left
+    opposite Up = Down
+    opposite Down = Up
 
 foodEvents :: EvStream () -> Behavior Snake -> Behavior FoodPellet -> EvStream ()
 foodEvents evs snake pellet = do

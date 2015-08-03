@@ -10,14 +10,19 @@ import qualified Graphics.UI.GLUT as GLUT
 
 import Types
 
-render :: Behavior Snake -> Behavior Picture
-render snake = color white <$> renderSnake snake
+render :: Behavior Snake -> Behavior FoodPellet -> Behavior Picture
+render snake pellet = color white <$> renderSnake snake <> renderPellet pellet
 
 renderSnake :: Behavior Snake -> Behavior Picture
 renderSnake snake = snake >>= foldMap renderSegment
   where
     renderSegment :: Entity -> Behavior Picture
     renderSegment (Entity (x,y)) = return . translate (x*20) (y*20) . color white $ circleSolid 10
+
+renderPellet :: Behavior FoodPellet -> Behavior Picture
+renderPellet pellet = do
+  (Entity (x,y)) <- pellet
+  return . translate (x*20) (y*20) . color white $ circleSolid 7
 
 --render :: Behavior WorldState -> Behavior Picture
 --render state = do

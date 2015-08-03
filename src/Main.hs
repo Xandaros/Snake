@@ -1,3 +1,4 @@
+{-# LANGUAGE RecursiveDo #-}
 module Main where
 import Prelude hiding(Either(..))
 import Control.FRPNow
@@ -5,6 +6,7 @@ import Control.FRPNow.Gloss
 import Graphics.Gloss.Interface.Pure.Game hiding (Event)
 import Graphics.Gloss
 import System.CPUTime
+import System.Random
 
 import Logic
 import Render
@@ -17,11 +19,14 @@ main :: IO ()
 main = runNowGloss (InWindow "Snake" (resolution_w, resolution_h) (0, 0)) black fps mainFRP 
 
 mainFRP :: Behavior Float -> EvStream GEvent -> Now (Behavior Picture)
-mainFRP time events = do
+mainFRP time events = mdo
   moveEvs <- sampleNow $ (const () <$>) <$> moveEvents time
   dir <- sampleNow $ getDirection events
   snake <- sampleNow (segments dir moveEvs)
-  return $ render snake
+  rng <- sync getStdGen
+  let foodEvs = foodEvents moveEvs snake pellet
+  pellet <- sampleNow $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
+  return $ render snake pellet
 --mainTest :: Behavior Float -> EvStream GEvent -> Now (Behavior Picture)
 --mainTest f _ = do
 --  asd <- sampleNow (update f)

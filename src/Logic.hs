@@ -7,6 +7,7 @@ import Control.FRPNow.Gloss
 import Control.Lens
 import Control.Monad.State
 import Data.Maybe (fromJust)
+import System.Random
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down
@@ -93,6 +94,32 @@ getDirection evs =
       KeyDown  -> Just Down
       _        -> Nothing
     keyToDirection _ = Nothing
+
+foodEvents :: EvStream () -> Behavior Snake -> Behavior FoodPellet -> EvStream ()
+foodEvents evs snake pellet =
+  let snakePellets    = ((,) <$> pellet) <@@> snapshots snake evs :: EvStream (FoodPellet, Snake)
+      intersectStream = isEating <$> snakePellets :: EvStream Bool
+  in void $ filterEs id intersectStream
+  where
+    isEating :: (FoodPellet, Snake) -> Bool
+    isEating (Entity pellet, snake) = let snakeHead = position . head $ snake
+                                      in  pellet == snakeHead
+
+foodPellet :: Behavior [Point] -> (Int, Int) -> EvStream () -> StdGen -> Behavior (Behavior FoodPellet)
+foodPellet occupied (width, height) evs rng = do
+  occ <- occupied
+  let occStream        = snapshots occupied evs
+      (firstV, firstG) = scanFunc (undefined, firstG) occ
+  evs' <- scanlEv scanFunc (firstV, firstG) occStream
+  fromChanges (Entity firstV) (Entity . fst <$> evs')
+  where
+    available occ = [(x,y) | x <- [-w..w], y <- [-h..h], (x,y) `notElem` occ]
+    w = fromIntegral width  / 2-1 :: Float
+    h = fromIntegral height / 2-1 :: Float
+    scanFunc :: (Point, StdGen) -> [Point] -> (Point, StdGen)
+    scanFunc (_, gen) occ = let avail          = available occ
+                                (rand, newGen) = randomR (0, length (available occ) - 1) gen
+                            in  (avail !! rand, newGen)
 
 --makeMove :: State WorldState ()
 --makeMove = do

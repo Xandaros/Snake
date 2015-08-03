@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Types ( resolution_w
              , resolution_h
 --             , initialWorldState
@@ -8,6 +7,7 @@ module Types ( resolution_w
              , Snake
              , FoodPellet
              , Direction(..)
+             , GameState(..)
 --             , snakeSegments
 --             , foodPellet
 --             , direction
@@ -36,6 +36,12 @@ data Direction = Up
 
 data Entity = Entity { position :: Point
                      } deriving (Show)
+
+data GameState = MainMenu
+               | Playing
+               | Paused
+               | GameOver
+               deriving (Eq, Show)
 
 type Snake = [Entity]
 type FoodPellet = Entity

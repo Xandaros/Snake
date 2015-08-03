@@ -2,11 +2,12 @@ module Logic  where
 import Prelude hiding ( Either(Left, Right)
                       )
 
+import Control.Applicative
 import Control.FRPNow
 import Control.FRPNow.Gloss
 import Control.Lens
 import Control.Monad.State
-import Data.Maybe (fromJust)
+import Data.Monoid
 import System.Random
 
 import Graphics.Gloss
@@ -68,6 +69,32 @@ segments direction steps foodEvs = do
                                  , (2 ,0)
                                  ]
 
+gameState :: EvStream () -> EvStream () -> Behavior (Behavior GameState)
+gameState playing gameOver = fromChanges MainMenu $ (const GameOver <$> gameOver) <> (const Playing <$> playing)
+
+playing :: EvStream GEvent -> Behavior GameState -> EvStream ()
+playing events curState = do
+  let keyStream = filterMapEs eventToKey events
+      condition :: Behavior GameState -> Behavior (Key -> Bool)
+      condition state = do
+        state' <- state
+        return (\key -> state' == MainMenu && key == SpecialKey KeyEnter)
+  void $ filterB (condition curState) keyStream
+
+gameOver :: EvStream () -> Behavior Snake -> EvStream ()
+gameOver evs snake = void $ filterEs (liftA2 (||) isOOB isIntersecting) (snapshots snake evs)
+  where
+    isOOB snake = let (Entity (x,y)) = head snake
+                  in  x < -w || x > w || y < -h || y > h
+    isIntersecting snake = let snakeHead = head snake
+                           in  count snake (==snakeHead) >= 2
+    w = resolution_w/40 - 1
+    h = resolution_h/40 - 1
+
+count :: [a] -> (a -> Bool) -> Int
+count [] _ = 0
+count (x:xs) f = if f x then 1 + count xs f else count xs f
+
 makeMove :: Snake -> Direction -> Snake
 makeMove current dir =
   let (Entity firstSegment) = head current
@@ -92,19 +119,6 @@ getDirection lastDir evs =
       filteredKeyStream = filterMapEsB (filterLastDir lastDir) keyStream
   in  fromChanges initialDirection filteredKeyStream
   where
-    eventToKey :: GEvent -> Maybe Key
-    eventToKey (EventKey key _ _ _) = Just key
-    eventToKey _ = Nothing
-
-    keyToDirection :: Key -> Maybe Direction
-    keyToDirection (SpecialKey key) = case key of
-      KeyLeft  -> Just Left
-      KeyRight -> Just Right
-      KeyUp    -> Just Up
-      KeyDown  -> Just Down
-      _        -> Nothing
-    keyToDirection _ = Nothing
-
     filterLastDir :: Behavior Direction -> Behavior (Direction -> Maybe Direction)
     filterLastDir lastDir = do
       lastDir' <- lastDir
@@ -115,6 +129,19 @@ getDirection lastDir evs =
     opposite Right = Left
     opposite Up = Down
     opposite Down = Up
+
+eventToKey :: GEvent -> Maybe Key
+eventToKey (EventKey key _ _ _) = Just key
+eventToKey _ = Nothing
+
+keyToDirection :: Key -> Maybe Direction
+keyToDirection (SpecialKey key) = case key of
+  KeyLeft  -> Just Left
+  KeyRight -> Just Right
+  KeyUp    -> Just Up
+  KeyDown  -> Just Down
+  _        -> Nothing
+keyToDirection _ = Nothing
 
 foodEvents :: EvStream () -> Behavior Snake -> Behavior FoodPellet -> EvStream ()
 foodEvents evs snake pellet = do

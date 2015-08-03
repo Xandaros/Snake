@@ -29,6 +29,7 @@ mainFRP time events = mdo
   rng <- sync getStdGen
   pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
   let foodEvs = foodEvents moveEvs snake pellet
+  state <- sampleNow . unloopify time $ gameState (playing events state) (gameOver moveEvs snake)
   return $ render snake pellet
 
 unloopify :: Behavior Time -> Behavior (Behavior a) -> Behavior (Behavior a)

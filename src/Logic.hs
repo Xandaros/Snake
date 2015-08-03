@@ -51,13 +51,16 @@ moveEvents time =
                          then steps + 1
                          else steps) 0 time
 
-segments :: Behavior Direction -> EvStream () -> Behavior (Behavior Snake)
-segments direction steps = do
+segments :: Behavior Direction -> EvStream () -> EvStream () -> Behavior (Behavior Snake)
+segments direction steps foodEvs = do
+  afterFoodEvs <- foldEs foodFold snake foodEvs
   let dirs = snapshots direction steps
-  foldBs (pure snake) foldFunc dirs
+  foldBs afterFoodEvs moveFold dirs
   where
-    foldFunc :: Behavior Snake -> Direction -> Behavior Snake
-    foldFunc snake dir = makeMove <$> snake <*> pure dir
+    moveFold :: Behavior Snake -> Direction -> Behavior Snake
+    moveFold snake dir = makeMove <$> snake <*> pure dir
+    foodFold :: Snake -> () -> Snake
+    foodFold snake _ = snake ++ [last snake]
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)

@@ -24,7 +24,7 @@ mainFRP :: Behavior Float -> EvStream GEvent -> Now (Behavior Picture)
 mainFRP time events = mdo
   moveEvs <- sampleNow $ (const () <$>) <$> moveEvents time
   dir <- sampleNow $ getDirection events
-  snake <- sampleNow (segments dir moveEvs)
+  snake <- sampleNow . unloopify time $ segments dir moveEvs foodEvs
   rng <- sync getStdGen
   pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
   let foodEvs = foodEvents moveEvs snake pellet

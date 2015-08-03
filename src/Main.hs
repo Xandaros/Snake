@@ -1,8 +1,10 @@
 {-# LANGUAGE RecursiveDo #-}
 module Main where
 import Prelude hiding(Either(..))
+
 import Control.FRPNow
 import Control.FRPNow.Gloss
+import Control.Monad
 import Graphics.Gloss.Interface.Pure.Game hiding (Event)
 import Graphics.Gloss
 import System.CPUTime
@@ -24,9 +26,16 @@ mainFRP time events = mdo
   dir <- sampleNow $ getDirection events
   snake <- sampleNow (segments dir moveEvs)
   rng <- sync getStdGen
+  pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
   let foodEvs = foodEvents moveEvs snake pellet
-  pellet <- sampleNow $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
   return $ render snake pellet
+
+unloopify :: Behavior Time -> Behavior (Behavior a) -> Behavior (Behavior a)
+unloopify time = join . (unloopify' <$>)
+  where unloopify' beh = do
+          beh' <- beh
+          delay time beh' beh
+
 --mainTest :: Behavior Float -> EvStream GEvent -> Now (Behavior Picture)
 --mainTest f _ = do
 --  asd <- sampleNow (update f)

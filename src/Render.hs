@@ -3,6 +3,7 @@ module Render ( render
 import Control.Lens
 import Data.Monoid
 import System.IO.Unsafe (unsafePerformIO)
+import Debug.Trace (trace)
 
 import Control.FRPNow
 import Graphics.Gloss

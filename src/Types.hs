@@ -35,7 +35,7 @@ data Direction = Up
                deriving (Eq, Show)
 
 data Entity = Entity { position :: Point
-                     }
+                     } deriving (Show)
 
 type Snake = [Entity]
 type FoodPellet = Entity

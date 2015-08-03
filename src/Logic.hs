@@ -96,10 +96,10 @@ getDirection evs =
     keyToDirection _ = Nothing
 
 foodEvents :: EvStream () -> Behavior Snake -> Behavior FoodPellet -> EvStream ()
-foodEvents evs snake pellet =
+foodEvents evs snake pellet = do
   let snakePellets    = ((,) <$> pellet) <@@> snapshots snake evs :: EvStream (FoodPellet, Snake)
       intersectStream = isEating <$> snakePellets :: EvStream Bool
-  in void $ filterEs id intersectStream
+  void $ filterEs id intersectStream
   where
     isEating :: (FoodPellet, Snake) -> Bool
     isEating (Entity pellet, snake) = let snakeHead = position . head $ snake
@@ -109,7 +109,7 @@ foodPellet :: Behavior [Point] -> (Int, Int) -> EvStream () -> StdGen -> Behavio
 foodPellet occupied (width, height) evs rng = do
   occ <- occupied
   let occStream        = snapshots occupied evs
-      (firstV, firstG) = scanFunc (undefined, firstG) occ
+      (firstV, firstG) = scanFunc (undefined, rng) occ
   evs' <- scanlEv scanFunc (firstV, firstG) occStream
   fromChanges (Entity firstV) (Entity . fst <$> evs')
   where

@@ -7,6 +7,7 @@ import Control.FRPNow
 import Control.FRPNow.Gloss
 import Control.Monad
 import Graphics.Gloss.Interface.Pure.Game hiding (Event)
+import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState(Up, Down))
 import Graphics.Gloss
 import System.CPUTime
 import System.Random (getStdGen)
@@ -36,13 +37,8 @@ mainFRP time events = mainFRP' time events mainMenu
 
 mainMenu :: Behavior Time -> EvStream GEvent -> State
 mainMenu time events = State $ do
-  let nextScreens = fmap (const game) . filterEs isEnter . filterMapEs eventToKey . filterEs isKeyDownEvent $ events
-  nextScreen <- sampleNow $ next nextScreens
-  return (renderMainMenu, nextScreen)
-  where
-    isEnter :: Key -> Bool
-    isEnter (SpecialKey KeyEnter) = True
-    isEnter _                     = False
+  keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
+  return (renderMainMenu, const game <$> keyEv)
 
 game :: Behavior Time -> EvStream GEvent -> State
 game time events = State $ mdo
@@ -58,9 +54,8 @@ game time events = State $ mdo
 
 gameOver :: Behavior Time -> EvStream GEvent -> State
 gameOver time events = State $ do
-  let nextScreens = fmap (const mainMenu) . filterEs isEnter . filterMapEs eventToKey . filterEs isKeyDownEvent $ events
-  nextScreen <- sampleNow $ next nextScreens
-  return (renderGameOver, nextScreen)
+  keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
+  return (renderGameOver, const mainMenu <$> keyEv)
   where
     isEnter :: Key -> Bool
     isEnter (SpecialKey KeyEnter) = True

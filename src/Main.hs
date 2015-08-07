@@ -36,7 +36,7 @@ mainFRP time events = mainFRP' time events mainMenu
 
 mainMenu :: Behavior Time -> EvStream GEvent -> State
 mainMenu time events = State $ do
-  let nextScreens = fmap (const game) . filterEs isEnter . filterMapEs eventToKey $ events
+  let nextScreens = fmap (const game) . filterEs isEnter . filterMapEs eventToKey . filterEs isKeyDownEvent $ events
   nextScreen <- sampleNow $ next nextScreens
   return (renderMainMenu, nextScreen)
   where
@@ -53,8 +53,18 @@ game time events = State $ mdo
   rng <- sync getStdGen
   pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
   let foodEvs = foodEvents moveEvs snake pellet
-  state <- sampleNow . unloopify time $ gameState (playing events state) (gameOver moveEvs snake)
-  return (render snake pellet, never)
+  gameOverEv <- sampleNow $ gameOverEvent moveEvs snake
+  return (renderGame snake pellet, const gameOver <$> gameOverEv)
+
+gameOver :: Behavior Time -> EvStream GEvent -> State
+gameOver time events = State $ do
+  let nextScreens = fmap (const mainMenu) . filterEs isEnter . filterMapEs eventToKey . filterEs isKeyDownEvent $ events
+  nextScreen <- sampleNow $ next nextScreens
+  return (renderGameOver, nextScreen)
+  where
+    isEnter :: Key -> Bool
+    isEnter (SpecialKey KeyEnter) = True
+    isEnter _                     = False
 
 unloopify :: Behavior Time -> Behavior (Behavior a) -> Behavior (Behavior a)
 unloopify time = join . (unloopify' <$>)

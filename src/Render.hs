@@ -1,5 +1,6 @@
-module Render ( render
+module Render ( renderGame
               , renderMainMenu
+              , renderGameOver
               ) where
 import Control.Lens
 import Data.Monoid
@@ -18,8 +19,14 @@ renderMainMenu = return $ color white . scale 0.5 0.5 . translate (-textWidth/2)
     startText = "Press Enter to start"
     textWidth = getTextWidth startText
 
-render :: Behavior Snake -> Behavior FoodPellet -> Behavior Picture
-render snake pellet = color white <$> renderSnake snake <> renderPellet pellet
+renderGameOver :: Behavior Picture
+renderGameOver = return $ color red . scale 0.5 0.5 . translate (-textWidth/2) (-fontHeight/4) $ text gameOverText
+  where
+    gameOverText = "Game Over"
+    textWidth = getTextWidth gameOverText
+
+renderGame :: Behavior Snake -> Behavior FoodPellet -> Behavior Picture
+renderGame snake pellet = color white <$> renderSnake snake <> renderPellet pellet
 
 renderSnake :: Behavior Snake -> Behavior Picture
 renderSnake snake = snake >>= foldMap renderSegment

@@ -8,10 +8,10 @@ import Control.FRPNow.Gloss
 import Control.Lens
 import Control.Monad.State
 import Data.Monoid
-import System.Random
+import System.Random (randomR, StdGen())
 
 import Graphics.Gloss
-import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down
+import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down, Event(..)
                                                  )
 import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState (Up, Down)) 
 
@@ -46,9 +46,6 @@ segments direction steps foodEvs = do
                                  , (2 ,0)
                                  ]
 
-gameState :: EvStream () -> EvStream () -> Behavior (Behavior GameState)
-gameState playing gameOver = fromChanges MainMenu $ (const GameOver <$> gameOver) <> (const Playing <$> playing)
-
 playing :: EvStream GEvent -> Behavior GameState -> EvStream ()
 playing events curState = do
   let keyStream = filterMapEs eventToKey events
@@ -58,8 +55,9 @@ playing events curState = do
         return (\key -> state' == MainMenu && key == SpecialKey KeyEnter)
   void $ filterB (condition curState) keyStream
 
-gameOver :: EvStream () -> Behavior Snake -> EvStream ()
-gameOver evs snake = void $ filterEs (liftA2 (||) isOOB isIntersecting) (snapshots snake evs)
+-- FIXME: Delayed by one tick
+gameOverEvent :: EvStream () -> Behavior Snake -> Behavior (Event ())
+gameOverEvent evs snake = next . void $ filterEs (liftA2 (||) isOOB isIntersecting) (snapshots snake evs)
   where
     isOOB snake = let (Entity (x,y)) = head snake
                   in  x < -w || x > w || y < -h || y > h

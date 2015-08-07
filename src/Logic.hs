@@ -115,6 +115,9 @@ foodEvents evs snake pellet = do
     isEating (Entity pellet, snake) = let snakeHead = position . head $ snake
                                       in  pellet == snakeHead
 
+score :: EvStream () -> Behavior (Behavior Integer)
+score ev = foldEs (\a _ -> a + 1) 0 ev
+
 foodPellet :: Behavior [Point] -> (Int, Int) -> EvStream () -> StdGen -> Behavior (Behavior FoodPellet)
 foodPellet occupied (width, height) evs rng = do
   occ <- occupied

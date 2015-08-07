@@ -36,7 +36,7 @@ mainFRP time events = mainFRP' time events mainMenu
       return $ pic `switch` nextState
 
 mainMenu :: Behavior Time -> EvStream GEvent -> State
-mainMenu time events = State $ do
+mainMenu _ events = State $ do
   keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
   return (renderMainMenu, const game <$> keyEv)
 
@@ -50,16 +50,14 @@ game time events = State $ mdo
   pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
   let foodEvs = foodEvents moveEvs snake pellet
   gameOverEv <- sampleNow $ gameOverEvent moveEvs snake
-  return (renderGame snake pellet, const gameOver <$> gameOverEv)
+  score' <- sampleNow $ score foodEvs
+  return (renderGame snake pellet score', const (gameOver score') <$> gameOverEv)
 
-gameOver :: Behavior Time -> EvStream GEvent -> State
-gameOver time events = State $ do
+gameOver :: Behavior Integer -> Behavior Time -> EvStream GEvent -> State
+gameOver score _ events = State $ do
+  lastScore <- sampleNow score
   keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
-  return (renderGameOver, const mainMenu <$> keyEv)
-  where
-    isEnter :: Key -> Bool
-    isEnter (SpecialKey KeyEnter) = True
-    isEnter _                     = False
+  return (renderGameOver lastScore, const mainMenu <$> keyEv)
 
 unloopify :: Behavior Time -> Behavior (Behavior a) -> Behavior (Behavior a)
 unloopify time = join . (unloopify' <$>)

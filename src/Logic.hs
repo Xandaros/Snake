@@ -16,16 +16,18 @@ import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down
 import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState (Up, Down)) 
 
 import Types
+import Util
 
 speed :: Behavior Time
 speed = pure 1
 
 moveEvents :: Behavior Time -> Behavior (EvStream Time)
-moveEvents time =
+moveEvents time = do
+  currentTime <- time
   toChanges <$> foldB (\steps contin ->
                          if contin >= steps + 0.3
                          then steps + 0.3
-                         else steps) 0 time
+                         else steps) currentTime time
 
 segments :: Behavior Direction -> EvStream () -> EvStream () -> Behavior (Behavior Snake)
 segments direction steps foodEvs = do
@@ -104,19 +106,6 @@ getDirection lastDir evs =
     opposite Right = Left
     opposite Up = Down
     opposite Down = Up
-
-eventToKey :: GEvent -> Maybe Key
-eventToKey (EventKey key _ _ _) = Just key
-eventToKey _ = Nothing
-
-keyToDirection :: Key -> Maybe Direction
-keyToDirection (SpecialKey key) = case key of
-  KeyLeft  -> Just Left
-  KeyRight -> Just Right
-  KeyUp    -> Just Up
-  KeyDown  -> Just Down
-  _        -> Nothing
-keyToDirection _ = Nothing
 
 foodEvents :: EvStream () -> Behavior Snake -> Behavior FoodPellet -> EvStream ()
 foodEvents evs snake pellet = do

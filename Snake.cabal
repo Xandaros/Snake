@@ -21,6 +21,7 @@ executable Snake
   other-modules:       Types
                      , Render
                      , Logic
+                     , Util
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.9
                      , gloss

@@ -27,8 +27,13 @@ renderGameOver score = return $ (color red . scale 0.5 0.5 . translate (-textWid
     scoreText = "Score: " ++ show score
     scoreTextWidth = getTextWidth scoreText
 
-renderGame :: Behavior Snake -> Behavior FoodPellet -> Behavior Integer -> Behavior Picture
-renderGame snake pellet score = color white <$> renderSnake snake <> renderPellet pellet <> renderScore score
+renderGame :: Behavior Snake -> Behavior FoodPellet -> Behavior Integer -> Behavior Bool -> Behavior Picture
+renderGame snake pellet score paused = do
+  let pauseOverlay = fmap (\b -> if b then pauseOverlayP else blank) paused
+  color white <$> renderSnake snake <> renderPellet pellet <> renderScore score <> pauseOverlay
+  where
+    pauseOverlayP :: Picture
+    pauseOverlayP = color (withAlpha 0.9 black) fillScreen
 
 renderSnake :: Behavior Snake -> Behavior Picture
 renderSnake snake = snake >>= foldMap renderSegment
@@ -47,6 +52,16 @@ renderScore score = do
   return . color white . translate ((-resolution_w/2)+20) ((resolution_h/2)-40) . scale 0.2 0.2 $ text (show score')
 -- renderScore state = translate ((-resolution_w/2)+20) ((resolution_h/2)-40) . scale 0.2 0.2 . color white $ text (show $ state^.score)
 
+fillScreen :: Picture
+fillScreen = polygon [ (-w, -h)
+                     , (-w, h)
+                     , (w, h)
+                     , (w, -h)
+                     , (-w, -h)
+                     ]
+  where
+    w = resolution_w/2
+    h = resolution_h/2
 
 getTextWidth :: Num a => String -> a
 getTextWidth = fromIntegral . unsafePerformIO . GLUT.stringWidth GLUT.Roman

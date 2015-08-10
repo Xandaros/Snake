@@ -32,16 +32,16 @@ timeInterval time iv = do
 --      speedStream = toChanges speed :: EvStream Time
 --  foldrSwitch (intervals curSpeed) $ intervals <$> speedStream
 
-moveEvents :: Behavior Time -> Behavior Float -> Behavior (EvStream Integer)
-moveEvents time speed = toChanges <$> (fmap round <$> integrate time speed)
+moveEvents :: Behavior Time -> Behavior Float -> Behavior Bool -> Behavior (EvStream Integer)
+moveEvents time speed paused = do
+  moveStream <- toChanges <$> (fmap round <$> integrate time speed)
+  return $ moveStream `during` (not <$> paused)
+
+paused :: EvStream GEvent -> Behavior (Behavior Bool)
+paused evs = keyToggle evs (Char 'p') (pure False) (pure True)
 
 speed :: EvStream GEvent -> Behavior (Behavior Float)
-speed evs = do
-  let keyEvents = filterKeys evs [SpecialKey KeySpace]
-      speedEvents = fmap (\(EventKey _ state _ _) -> case state of
-                       KeyState.Up -> pure 5
-                       KeyState.Down -> pure 10) keyEvents
-  foldrSwitch (pure 2) speedEvents
+speed evs = whileKeyDown evs (SpecialKey KeySpace) (pure 5) (pure 10)
 
 segments :: Behavior Direction -> EvStream () -> EvStream () -> Behavior (Behavior Snake)
 segments direction steps foodEvs = do

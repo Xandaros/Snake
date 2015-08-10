@@ -3,6 +3,8 @@ module Util ( eventToKey
             , isKeyDownEvent
             , waitForKey
             , filterKeys
+            , whileKeyDown
+            , keyToggle
             ) where
 import Prelude hiding ( Either (Left, Right)
                       )
@@ -14,7 +16,7 @@ import Graphics.Gloss.Interface.IO.Game hiding ( KeyState (Up, Down)
                                                , Event()
                                                )
 
-import qualified Graphics.Gloss.Interface.IO.Game as KeyState ( KeyState (Down)
+import qualified Graphics.Gloss.Interface.IO.Game as KeyState ( KeyState (..)
                                                               )
 
 import Types
@@ -61,3 +63,21 @@ filterKeys stream keys = do
     isKeyEvent :: GEvent -> Bool
     isKeyEvent EventKey{} = True
     isKeyEvent _ = False
+
+whileKeyDown :: EvStream GEvent -> Key -> Behavior a -> Behavior a -> Behavior (Behavior a)
+whileKeyDown evs key releasedBeh pressedBeh = do
+  let keyEvs = filterKeys evs [key]
+      changes = fmap (\ev -> case ev of
+                        (EventKey _ KeyState.Up _ _) -> releasedBeh
+                        (EventKey _ KeyState.Down _ _) -> pressedBeh) keyEvs
+  releasedBeh `foldrSwitch` changes
+
+keyToggle :: EvStream GEvent -> Key -> Behavior a -> Behavior a -> Behavior (Behavior a)
+keyToggle evs key beh1 beh2 = do
+  let keyEvs = filterKeys evs [key]
+      pressEvs = filterEs (\ev -> case ev of
+                             (EventKey _ KeyState.Down _ _) -> True
+                             _ -> False
+                          ) keyEvs
+  behaviors <- scanlEv (\(_, b) _ -> if b then (beh1, False) else (beh2, True)) (undefined, False) pressEvs
+  foldrSwitch beh1 (fst <$> behaviors)

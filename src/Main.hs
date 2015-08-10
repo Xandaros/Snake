@@ -46,8 +46,9 @@ game time events = State $ mdo
   curTime <- sampleNow $ time
   delayedTime <- sampleNow $ delay time curTime time
   speed' <- sampleNow $ speed events
-  moveEvs <- sampleNow $ void <$> moveEvents time speed'
-  delayedMoveEvs <- sampleNow $ void <$> moveEvents delayedTime speed'
+  paused' <- sampleNow $ paused events
+  moveEvs <- sampleNow $ void <$> moveEvents time speed' paused'
+  delayedMoveEvs <- sampleNow $ void <$> moveEvents delayedTime speed' paused'
   lastDir <- sampleNow . unloopify time $ lastDirection moveEvs dir
   dir <- sampleNow $ getDirection lastDir events
   snake <- sampleNow . unloopify time $ segments dir moveEvs foodEvs
@@ -56,7 +57,7 @@ game time events = State $ mdo
   let foodEvs = foodEvents delayedMoveEvs snake pellet
   gameOverEv <- sampleNow $ gameOverEvent delayedMoveEvs snake
   score' <- sampleNow $ score foodEvs
-  return (renderGame snake pellet score', const (gameOver score') <$> gameOverEv)
+  return (renderGame snake pellet score' paused', const (gameOver score') <$> gameOverEv)
 
 gameOver :: Behavior Integer -> Behavior Time -> EvStream GEvent -> State
 gameOver score _ events = State $ do

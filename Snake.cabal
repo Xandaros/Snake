@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable Snake
   main-is:             Main.hs
-  ghc-options:         -Wall
+  ghc-options:         -Wall -threaded -rtsopts -fno-warn-name-shadowing
   other-modules:       Types
                      , Render
                      , Logic
@@ -25,7 +25,7 @@ executable Snake
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.9
                      , gloss
-                     , lens
+--                     , lens
                      , mtl
                      , random
                      , GLUT

@@ -42,7 +42,8 @@ mainMenu _ events = State $ do
 
 game :: Behavior Time -> EvStream GEvent -> State
 game time events = State $ mdo
-  moveEvs <- sampleNow $ void <$> moveEvents time
+  speed' <- sampleNow $ speed events
+  moveEvs <- sampleNow $ void <$> moveEvents time speed'
   lastDir <- sampleNow . unloopify time $ lastDirection moveEvs dir
   dir <- sampleNow $ getDirection lastDir events
   snake <- sampleNow . unloopify time $ segments dir moveEvs foodEvs

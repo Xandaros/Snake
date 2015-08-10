@@ -1,33 +1,47 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Logic  where
 import Prelude hiding ( Either(Left, Right)
                       )
 
 import Control.Applicative
-import Control.FRPNow
+import Control.Monad
+import Control.FRPNow hiding (integrate)
 import Control.FRPNow.Gloss
-import Control.Lens
-import Control.Monad.State
-import Data.Monoid
 import System.Random (randomR, StdGen())
 
 import Graphics.Gloss
-import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down, Event(..)
+import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down, Event()
                                                  )
-import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState (Up, Down)) 
+import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState (..))
 
 import Types
 import Util
 
-speed :: Behavior Time
-speed = pure 1
-
-moveEvents :: Behavior Time -> Behavior (EvStream Time)
-moveEvents time = do
-  currentTime <- time
+timeInterval :: Behavior Time -> Float -> Behavior (EvStream Time)
+timeInterval time iv = do
+  curTime <- time
   toChanges <$> foldB (\steps contin ->
-                         if contin >= steps + 0.3
-                         then steps + 0.3
-                         else steps) currentTime time
+                         if contin >= steps + iv
+                         then steps + iv
+                         else steps) curTime time
+
+--moveEvents :: Behavior Time -> Behavior Float -> Behavior (Behavior (EvStream Time))
+--moveEvents time speed = do
+--  curSpeed <- speed
+--  let intervals = timeInterval time :: Float -> Behavior (EvStream Time)
+--      speedStream = toChanges speed :: EvStream Time
+--  foldrSwitch (intervals curSpeed) $ intervals <$> speedStream
+
+moveEvents :: Behavior Time -> Behavior Float -> Behavior (EvStream Integer)
+moveEvents time speed = toChanges <$> (fmap round <$> integrate time speed)
+
+speed :: EvStream GEvent -> Behavior (Behavior Float)
+speed evs = do
+  let keyEvents = filterKeys evs [SpecialKey KeySpace]
+      speedEvents = fmap (\(EventKey _ state _ _) -> case state of
+                       KeyState.Up -> pure 5
+                       KeyState.Down -> pure 10) keyEvents
+  foldrSwitch (pure 2) speedEvents
 
 segments :: Behavior Direction -> EvStream () -> EvStream () -> Behavior (Behavior Snake)
 segments direction steps foodEvs = do
@@ -45,15 +59,6 @@ segments direction steps foodEvs = do
                                  , (1 ,0)
                                  , (2 ,0)
                                  ]
-
-playing :: EvStream GEvent -> Behavior GameState -> EvStream ()
-playing events curState = do
-  let keyStream = filterMapEs eventToKey events
-      condition :: Behavior GameState -> Behavior (Key -> Bool)
-      condition state = do
-        state' <- state
-        return (\key -> state' == MainMenu && key == SpecialKey KeyEnter)
-  void $ filterB (condition curState) keyStream
 
 -- FIXME: Delayed by one tick
 gameOverEvent :: EvStream () -> Behavior Snake -> Behavior (Event ())
@@ -133,3 +138,11 @@ foodPellet occupied (width, height) evs rng = do
     scanFunc (_, gen) occ = let avail          = available occ
                                 (rand, newGen) = randomR (0, length (available occ) - 1) gen
                             in  (avail !! rand, newGen)
+
+integrate :: Behavior Float -> Behavior Float -> Behavior (Behavior Float)
+integrate time v =
+  do t <- time
+     vp <- delay time (t,0) (liftA2 (,) time v)
+     foldB add 0 (liftA2 (,) vp time)
+  where add total ((t1,v),t2) =
+          total + ((t2 - t1) * v)

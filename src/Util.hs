@@ -2,6 +2,7 @@ module Util ( eventToKey
             , keyToDirection
             , isKeyDownEvent
             , waitForKey
+            , filterKeys
             ) where
 import Prelude hiding ( Either (Left, Right)
                       )
@@ -46,5 +47,17 @@ waitForKey evs key ks = do
   where
     isKeyEvent :: Key -> GEvent -> Bool
     isKeyEvent key (EventKey k _ _ _) | key == k  = True
-                                        | otherwise = False
+                                    | otherwise = False
     isKeyEvent _ _ = False
+
+filterKeys :: EvStream GEvent -> [Key] -> EvStream GEvent
+filterKeys stream keys = do
+  let keyEvents = filterEs isKeyEvent stream
+  filterEs ((`elem` keys) . getKey) keyEvents
+  where
+    getKey :: GEvent -> Key -- PARTIAL!
+    getKey (EventKey key _ _ _) = key
+
+    isKeyEvent :: GEvent -> Bool
+    isKeyEvent EventKey{} = True
+    isKeyEvent _ = False

@@ -2,7 +2,6 @@ module Render ( renderGame
               , renderMainMenu
               , renderGameOver
               ) where
-import Control.Lens
 import Data.Monoid
 import System.IO.Unsafe (unsafePerformIO)
 import Debug.Trace (trace)

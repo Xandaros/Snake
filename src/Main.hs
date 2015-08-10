@@ -40,17 +40,21 @@ mainMenu _ events = State $ do
   keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
   return (renderMainMenu, const game <$> keyEv)
 
+-- TODO: Ununloopify...
 game :: Behavior Time -> EvStream GEvent -> State
 game time events = State $ mdo
+  curTime <- sampleNow $ time
+  delayedTime <- sampleNow $ delay time curTime time
   speed' <- sampleNow $ speed events
   moveEvs <- sampleNow $ void <$> moveEvents time speed'
+  delayedMoveEvs <- sampleNow $ void <$> moveEvents delayedTime speed'
   lastDir <- sampleNow . unloopify time $ lastDirection moveEvs dir
   dir <- sampleNow $ getDirection lastDir events
   snake <- sampleNow . unloopify time $ segments dir moveEvs foodEvs
   rng <- sync getStdGen
   pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
-  let foodEvs = foodEvents moveEvs snake pellet
-  gameOverEv <- sampleNow $ gameOverEvent moveEvs snake
+  let foodEvs = foodEvents delayedMoveEvs snake pellet
+  gameOverEv <- sampleNow $ gameOverEvent delayedMoveEvs snake
   score' <- sampleNow $ score foodEvs
   return (renderGame snake pellet score', const (gameOver score') <$> gameOverEv)
 

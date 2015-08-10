@@ -1,7 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Logic  where
-import Prelude hiding ( Either(Left, Right)
-                      )
+import Prelude hiding (Either(Left, Right))
 
 import Control.Applicative
 import Control.Monad
@@ -10,9 +8,7 @@ import Control.FRPNow.Gloss
 import System.Random (randomR, StdGen())
 
 import Graphics.Gloss
-import Graphics.Gloss.Interface.Pure.Game hiding ( Up, Down, Event()
-                                                 )
-import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState (..))
+import Graphics.Gloss.Interface.Pure.Game hiding (Event(), KeyState(..))
 
 import Types
 import Util
@@ -23,14 +19,8 @@ timeInterval time iv = do
   toChanges <$> foldB (\steps contin ->
                          if contin >= steps + iv
                          then steps + iv
-                         else steps) curTime time
-
---moveEvents :: Behavior Time -> Behavior Float -> Behavior (Behavior (EvStream Time))
---moveEvents time speed = do
---  curSpeed <- speed
---  let intervals = timeInterval time :: Float -> Behavior (EvStream Time)
---      speedStream = toChanges speed :: EvStream Time
---  foldrSwitch (intervals curSpeed) $ intervals <$> speedStream
+                         else steps
+                      ) curTime time
 
 moveEvents :: Behavior Time -> Behavior Float -> Behavior Bool -> Behavior (EvStream Integer)
 moveEvents time speed paused = do
@@ -51,8 +41,11 @@ segments direction steps foodEvs = do
   where
     moveFold :: Behavior Snake -> Direction -> Behavior Snake
     moveFold snake dir = makeMove <$> snake <*> pure dir
+
     foodFold :: Snake -> () -> Snake
     foodFold snake _ = snake ++ [last snake]
+
+    snake :: Snake
     snake = reverse $ map Entity [ (-2,0)
                                  , (-1,0)
                                  , (0 ,0)
@@ -60,25 +53,31 @@ segments direction steps foodEvs = do
                                  , (2 ,0)
                                  ]
 
--- FIXME: Delayed by one tick
 gameOverEvent :: EvStream () -> Behavior Snake -> Behavior (Event ())
 gameOverEvent evs snake = next . void $ filterEs (liftA2 (||) isOOB isIntersecting) (snapshots snake evs)
   where
+    isOOB :: Snake -> Bool
     isOOB snake = let (Entity (x,y)) = head snake
                   in  x < -w || x > w || y < -h || y > h
+
+    isIntersecting :: Snake -> Bool
     isIntersecting snake = let snakeHead = head snake
                            in  count snake (==snakeHead) >= 2
+
+    w, h :: Float
     w = resolution_w/40 - 1
     h = resolution_h/40 - 1
 
 count :: [a] -> (a -> Bool) -> Int
 count [] _ = 0
-count (x:xs) f = if f x then 1 + count xs f else count xs f
+count (x:xs) f = if f x
+                 then 1 + count xs f
+                 else count xs f
 
 makeMove :: Snake -> Direction -> Snake
 makeMove current dir =
   let (Entity firstSegment) = head current
-      newSegment = newPos firstSegment dir
+      newSegment            = newPos firstSegment dir
   in  (Entity newSegment:) . init $ current
   where
     newPos (x,y) dir = case dir of
@@ -95,14 +94,17 @@ lastDirection evs dir = fromChanges initialDirection $ snapshots dir evs
 
 getDirection :: Behavior Direction -> EvStream GEvent -> Behavior (Behavior Direction)
 getDirection lastDir evs =
-  let keyStream = filterMapEs (eventToKey >=> keyToDirection) evs
+  let keyStream         = filterMapEs (eventToKey >=> keyToDirection) evs
       filteredKeyStream = filterMapEsB (filterLastDir lastDir) keyStream
   in  fromChanges initialDirection filteredKeyStream
   where
     filterLastDir :: Behavior Direction -> Behavior (Direction -> Maybe Direction)
     filterLastDir lastDir = do
       lastDir' <- lastDir
-      return (\dir -> if lastDir' == opposite dir then Nothing else Just dir)
+      return (\dir -> if lastDir' == opposite dir
+                      then Nothing
+                      else Just dir
+             )
 
     opposite :: Direction -> Direction
     opposite Left = Right
@@ -131,9 +133,13 @@ foodPellet occupied (width, height) evs rng = do
   evs' <- scanlEv scanFunc (firstV, firstG) occStream
   fromChanges (Entity firstV) (Entity . fst <$> evs')
   where
+    available :: [Point] -> [Point]
     available occ = [(x,y) | x <- [-w..w], y <- [-h..h], (x,y) `notElem` occ]
-    w = fromIntegral width  / 2-1 :: Float
-    h = fromIntegral height / 2-1 :: Float
+
+    w, h :: Float
+    w             = fromIntegral width  / 2-1
+    h             = fromIntegral height / 2-1
+
     scanFunc :: (Point, StdGen) -> [Point] -> (Point, StdGen)
     scanFunc (_, gen) occ = let avail          = available occ
                                 (rand, newGen) = randomR (0, length (available occ) - 1) gen
@@ -141,8 +147,8 @@ foodPellet occupied (width, height) evs rng = do
 
 integrate :: Behavior Float -> Behavior Float -> Behavior (Behavior Float)
 integrate time v =
-  do t <- time
+  do t  <- time
      vp <- delay time (t,0) (liftA2 (,) time v)
      foldB add 0 (liftA2 (,) vp time)
-  where add total ((t1,v),t2) =
-          total + ((t2 - t1) * v)
+  where
+    add total ((t1, v), t2) = total + ((t2 - t1) * v)

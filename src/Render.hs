@@ -4,7 +4,6 @@ module Render ( renderGame
               ) where
 import Data.Monoid
 import System.IO.Unsafe (unsafePerformIO)
-import Debug.Trace (trace)
 
 import Control.FRPNow
 import Graphics.Gloss
@@ -29,7 +28,10 @@ renderGameOver score = return $ (color red . scale 0.5 0.5 . translate (-textWid
 
 renderGame :: Behavior Snake -> Behavior FoodPellet -> Behavior Integer -> Behavior Bool -> Behavior Picture
 renderGame snake pellet score paused = do
-  let pauseOverlay = fmap (\b -> if b then pauseOverlayP else blank) paused
+  let pauseOverlay = fmap (\b -> if b
+                                 then pauseOverlayP
+                                 else blank
+                          ) paused
   color white <$> renderSnake snake <> renderPellet pellet <> renderScore score <> pauseOverlay
   where
     pauseOverlayP :: Picture

@@ -7,9 +7,7 @@ import Control.FRPNow
 import Control.FRPNow.Gloss
 import Control.Monad
 import Graphics.Gloss.Interface.Pure.Game hiding (Event)
-import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState(Up, Down))
-import Graphics.Gloss
-import System.CPUTime
+import qualified Graphics.Gloss.Interface.Pure.Game as KeyState (KeyState(..))
 import System.Random (getStdGen)
 
 import Logic
@@ -32,7 +30,7 @@ mainFRP time events = mainFRP' time events mainMenu
              -> Now (Behavior Picture)
     mainFRP' time events func = do
       (pic, nextFunc) <- unState (func time events) :: Now (Behavior Picture, Event (Behavior Time -> EvStream GEvent -> State))
-      nextState <- planNow $ mainFRP' time events <$> nextFunc
+      nextState       <- planNow $ mainFRP' time events <$> nextFunc
       return $ pic `switch` nextState
 
 mainMenu :: Behavior Time -> EvStream GEvent -> State
@@ -43,26 +41,26 @@ mainMenu _ events = State $ do
 -- TODO: Ununloopify...
 game :: Behavior Time -> EvStream GEvent -> State
 game time events = State $ mdo
-  curTime <- sampleNow $ time
-  delayedTime <- sampleNow $ delay time curTime time
-  speed' <- sampleNow $ speed events
-  paused' <- sampleNow $ paused events
-  moveEvs <- sampleNow $ void <$> moveEvents time speed' paused'
-  delayedMoveEvs <- sampleNow $ void <$> moveEvents delayedTime speed' paused'
-  lastDir <- sampleNow . unloopify time $ lastDirection moveEvs dir
-  dir <- sampleNow $ getDirection lastDir events
-  snake <- sampleNow . unloopify time $ segments dir moveEvs foodEvs
-  rng <- sync getStdGen
-  pellet <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
-  let foodEvs = foodEvents delayedMoveEvs snake pellet
-  gameOverEv <- sampleNow $ gameOverEvent delayedMoveEvs snake
-  score' <- sampleNow $ score foodEvs
+  curTime        <- sampleNow                  $ time
+  delayedTime    <- sampleNow                  $ delay time curTime time
+  speed'         <- sampleNow                  $ speed events
+  paused'        <- sampleNow                  $ paused events
+  moveEvs        <- sampleNow                  $ void <$> moveEvents time speed' paused'
+  delayedMoveEvs <- sampleNow                  $ void <$> moveEvents delayedTime speed' paused'
+  lastDir        <- sampleNow . unloopify time $ lastDirection moveEvs dir
+  dir            <- sampleNow                  $ getDirection lastDir events
+  snake          <- sampleNow . unloopify time $ segments dir moveEvs foodEvs
+  rng            <- sync getStdGen
+  pellet         <- sampleNow . unloopify time $ foodPellet ((position <$>) <$> snake) (40, 30) foodEvs rng
+  let foodEvs     =                              foodEvents delayedMoveEvs snake pellet
+  gameOverEv     <- sampleNow                  $ gameOverEvent delayedMoveEvs snake
+  score'         <- sampleNow                  $ score foodEvs
   return (renderGame snake pellet score' paused', const (gameOver score') <$> gameOverEv)
 
 gameOver :: Behavior Integer -> Behavior Time -> EvStream GEvent -> State
 gameOver score _ events = State $ do
   lastScore <- sampleNow score
-  keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
+  keyEv     <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
   return (renderGameOver lastScore, const mainMenu <$> keyEv)
 
 unloopify :: Behavior Time -> Behavior (Behavior a) -> Behavior (Behavior a)

@@ -32,7 +32,7 @@ renderGame snake pellet score paused = do
                                  then pauseOverlayP
                                  else blank
                           ) paused
-  color white <$> renderSnake snake <> renderPellet pellet <> renderScore score <> pauseOverlay
+  color white <$> renderSnake snake <> pure box <> renderPellet pellet <> renderScore score <> pauseOverlay
   where
     pauseOverlayP :: Picture
     pauseOverlayP = color (withAlpha 0.9 black) fillScreen
@@ -62,6 +62,19 @@ fillScreen = polygon [ (-w, -h)
                      , (-w, -h)
                      ]
   where
+    w, h :: Float
+    w = resolution_w/2
+    h = resolution_h/2
+
+box :: Picture
+box = line [ ((-w)+10,(-h)+10)
+           , (w-10   ,(-h)+10)
+           , (w-10   ,h-10)
+           , ((-w)+10,h-10)
+           , ((-w)+10,(-h)+10)
+           ]
+  where
+    w, h :: Float
     w = resolution_w/2
     h = resolution_h/2
 

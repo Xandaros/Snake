@@ -1,5 +1,7 @@
 {-# LANGUAGE RecursiveDo #-}
-
+{-|
+Module: Main
+-}
 module Main where
 import Prelude hiding(Either(..))
 
@@ -15,13 +17,19 @@ import Render
 import Types
 import Util
 
+-- | Target FPS
 fps :: Int
 fps = 30
 
+-- | Program entry point
 main :: IO ()
 main = runNowGloss (InWindow "Snake" (resolution_w, resolution_h) (0, 0)) black fps mainFRP 
 
-mainFRP :: Behavior Time -> EvStream GEvent -> Now (Behavior Picture)
+-- | Main function
+-- Responsible for switching between menus and providing glue code between the different systems
+mainFRP :: Behavior Time   -- ^ Global time
+        -> EvStream GEvent -- ^ Global event stream
+        -> Now (Behavior Picture)
 mainFRP time events = mainFRP' time events mainMenu
   where
     mainFRP' :: Behavior Time
@@ -33,13 +41,22 @@ mainFRP time events = mainFRP' time events mainMenu
       nextState       <- planNow $ mainFRP' time events <$> nextFunc
       return $ pic `switch` nextState
 
-mainMenu :: Behavior Time -> EvStream GEvent -> State
+-- | The main menu
+-- Waits for the enter key and switches to 'game'
+mainMenu :: Behavior Time   -- ^ Global time
+         -> EvStream GEvent -- ^ Global event stream
+         -> State
 mainMenu _ events = State $ do
   keyEv <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
   return (renderMainMenu, const game <$> keyEv)
 
 -- TODO: Ununloopify...
-game :: Behavior Time -> EvStream GEvent -> State
+-- | The actual game
+-- Contains glue code between the "Logic" and the "Render"ing
+-- Switches to 'gameOver' after the game ends
+game :: Behavior Time   -- ^ Global time
+     -> EvStream GEvent -- ^ Global event stream
+     -> State
 game time events = State $ mdo
   curTime        <- sampleNow                  $ time
   delayedTime    <- sampleNow                  $ delay time curTime time
@@ -57,12 +74,19 @@ game time events = State $ mdo
   score'         <- sampleNow                  $ score foodEvs
   return (renderGame snake pellet score' paused', const (gameOver score') <$> gameOverEv)
 
-gameOver :: Behavior Integer -> Behavior Time -> EvStream GEvent -> State
+-- | Game over screen
+-- Waits for the enter key and switches to 'mainMenu'
+gameOver :: Behavior Integer -- ^ Score to display
+         -> Behavior Time    -- ^ Global time
+         -> EvStream GEvent  -- ^ Global event stream
+         -> State
 gameOver score _ events = State $ do
   lastScore <- sampleNow score
   keyEv     <- sampleNow $ waitForKey events (SpecialKey KeyEnter) (Just KeyState.Down)
   return (renderGameOver lastScore, const mainMenu <$> keyEv)
 
+-- | Introduce delay in the inner 'Behavior' to prevent immediate feedback loops
+-- This is a hack and should be removed once <https://github.com/atzeus/FRPNow/issues/7 FRPNow Issue #7> is resolved
 unloopify :: Behavior Time -> Behavior (Behavior a) -> Behavior (Behavior a)
 unloopify time = join . (unloopify' <$>)
   where unloopify' beh = do
@@ -70,5 +94,7 @@ unloopify time = join . (unloopify' <$>)
           delay time beh' beh
 
 -- TODO: Need better name
+-- | Return value for menus
+-- This is a simple box type to prevent functions from returning an infinite type
 data State = State { unState :: Now (Behavior Picture, Event (Behavior Time -> EvStream GEvent -> State))
                    }

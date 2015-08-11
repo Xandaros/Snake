@@ -1,3 +1,7 @@
+{-|
+Module: Util
+Description: Utility functions
+-}
 module Util ( eventToKey
             , keyToDirection
             , isKeyDownEvent
@@ -21,15 +25,21 @@ import qualified Graphics.Gloss.Interface.IO.Game as KeyState ( KeyState (..)
 
 import Types
 
-eventToKey :: GEvent -> Maybe Key
+-- | Turns a 'GEvent' into a 'Key', if it is a 'EventKey'
+eventToKey :: GEvent    -- ^ The event
+           -> Maybe Key
 eventToKey (EventKey key _ _ _) = Just key
 eventToKey _                    = Nothing
 
-isKeyDownEvent :: GEvent -> Bool
+-- | Returns whether the giving event is an event describing a key being pressed
+isKeyDownEvent :: GEvent -- ^ The event
+               -> Bool
 isKeyDownEvent (EventKey _ KeyState.Down _ _) = True
 isKeyDownEvent _                              = False
 
-keyToDirection :: Key -> Maybe Direction
+-- | Turns a 'Key' into a 'Direction', if the key is a movement key
+keyToDirection :: Key -- ^ The key
+               -> Maybe Direction
 keyToDirection (SpecialKey key) = case key of
   KeyLeft  -> Just Left
   KeyRight -> Just Right
@@ -38,7 +48,11 @@ keyToDirection (SpecialKey key) = case key of
   _        -> Nothing
 keyToDirection _                = Nothing
 
-waitForKey :: EvStream GEvent -> Key -> Maybe KeyState.KeyState -> Behavior (Event ())
+-- | Generate an 'Event' which gets fired once the giving key is being pressed/released
+waitForKey :: EvStream GEvent         -- ^ Global event stream
+           -> Key                     -- ^ Key to wait for
+           -> Maybe KeyState.KeyState -- ^ Whether to wait for press/release ('Just' 'KeyState.KeyState') or both ('Nothing')
+           -> Behavior (Event ())
 waitForKey evs key ks = do
   let keyEvents    = filterEs (isKeyEvent key) evs
       wantedEvents = filterEs (\(EventKey _ state _ _) -> case ks of
@@ -52,7 +66,10 @@ waitForKey evs key ks = do
                                       | otherwise = False
     isKeyEvent _ _ = False
 
-filterKeys :: EvStream GEvent -> [Key] -> EvStream GEvent
+-- | Given a stream of 'GEvent's, return a stream of 'GEvent's consisting of only events concerning the given 'Key's
+filterKeys :: EvStream GEvent -- ^ Input event stream
+           -> [Key]           -- ^ Keys to filter
+           -> EvStream GEvent
 filterKeys stream keys = do
   let keyEvents = filterEs isKeyEvent stream
   filterEs ((`elem` keys) . getKey) keyEvents
@@ -64,7 +81,12 @@ filterKeys stream keys = do
     isKeyEvent EventKey{} = True
     isKeyEvent _          = False
 
-whileKeyDown :: EvStream GEvent -> Key -> Behavior a -> Behavior a -> Behavior (Behavior a)
+-- | Switch behaviour depending on whether a key is being held down
+whileKeyDown :: EvStream GEvent -- ^ Event stream
+             -> Key             -- ^ Key to switch on
+             -> Behavior a      -- ^ 'Behavior' when the key not being held
+             -> Behavior a      -- ^ 'Behavior' when the key is being held
+             -> Behavior (Behavior a)
 whileKeyDown evs key releasedBeh pressedBeh = do
   let keyEvs  = filterKeys evs [key]
       changes = fmap (\ev -> case ev of
@@ -73,7 +95,12 @@ whileKeyDown evs key releasedBeh pressedBeh = do
                      ) keyEvs
   releasedBeh `foldrSwitch` changes
 
-keyToggle :: EvStream GEvent -> Key -> Behavior a -> Behavior a -> Behavior (Behavior a)
+-- | Toggle between two 'Behavior's when a given key is pressed
+keyToggle :: EvStream GEvent -- ^ Event stream
+          -> Key             -- ^ Key to toggle on
+          -> Behavior a      -- ^ Initial behavior
+          -> Behavior a      -- ^ Behavior to toggle between
+          -> Behavior (Behavior a)
 keyToggle evs key beh1 beh2 = do
   let keyEvs   = filterKeys evs [key]
       pressEvs = filterEs (\ev -> case ev of
